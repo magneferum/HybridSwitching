@@ -31,16 +31,20 @@ An advanced, real-time Automatic Transfer Switch (ATS) for Microgrid Systems (Gr
 | :--- | :--- | :--- |
 | **PZEM RX/TX**    | GPIO 16 / GPIO 17 | Hardware Serial 2 |
 | **OLED SDA/SCL**  | GPIO 21 / GPIO 22 | I2C Bus |
-| **Relay GRID**    |       GPIO X      | *(Update with your actual pin)* |
-| **Relay SOLAR**   |       GPIO Y      | *(Update with your actual pin)* |
-| **Btn Page**      |       GPIO A      | 10k Pull-Up |
-| **Btn Mode**      |       GPIO B      | 10k Pull-Up |
-| **Btn Toggle**    |       GPIO C      | 10k Pull-Up |
+| **Relay GRID L**  |       GPIO 14     | *(Update with your actual pin)* |
+| **Relay GRID N**  |       GPIO 32     | *(Update with your actual pin)* |
+| **Relay SOLAR L** |       GPIO 19     | *(Update with your actual pin)* |
+| **Relay SOLAR N** |       GPIO 33     | *(Update with your actual pin)* |
+| **Triac GRID**    |       GPIO 12     | *(Update with your actual pin)* |
+| **Triac SOLAR**   |       GPIO 18     | *(Update with your actual pin)* |
+| **Btn Page**      |       GPIO 27     | 10k Pull-Up |
+| **Btn Mode**      |       GPIO 26     | 10k Pull-Up |
+| **Btn Toggle**    |       GPIO 25     | 10k Pull-Up |
 
 ## 🧠 Software Architecture (FreeRTOS)
 The system is divided into 4 independent tasks running concurrently on two cores:
 
-1. **`taskSwitchingControl` (Core 1):** The brain of the system. Runs the Fuzzy Logic inference engine and handles the mechanical relay switching. It runs with the highest priority to ensure rapid response during emergency blackouts.
+1. **`taskSwitchingControl` (Core 1):** The main system. Runs the Fuzzy Logic inference engine and handles the mechanical relay switching. It runs with the highest priority to ensure rapid response during emergency blackouts.
 2. **`taskReadTelemetry` (Core 1):** Communicates with the PZEM-004T via Hardware Serial to fetch real-time V, I, P, and Hz.
 3. **`taskUpdateUI` (Core 0):** Manages the OLED display and button debounce logic. Runs on Core 0 to avoid blocking the main control loop.
 4. **`taskDataStream` (Core 0):** Sleeps for most of the cycle to save CPU time. Wakes up every 10 seconds to send data payloads securely to a Google Apps Script Web App. 

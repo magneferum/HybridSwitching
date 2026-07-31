@@ -115,6 +115,7 @@ void taskSwitchingControl(void *pvParameters) {
         }
 
         if (getLocalTime(&timeinfo, 0)) currentHour = timeinfo.tm_hour;
+        
         // =======================================================
         // Emergency Condition (Voltage < 5V )
         // =======================================================
@@ -129,18 +130,50 @@ void taskSwitchingControl(void *pvParameters) {
                 emergencyLock = true; 
                 currentState = STATE_TRANSITIONING;
 
-                // 3. Emergency mode execution
+                // 3. Emergency mode execution (SEQUENTIAL HYBRID SWITCHING)
                 if (wasGridActive) {
-                    digitalWrite(PIN_RELAY_GRID_L, LOW); digitalWrite(PIN_RELAY_GRID_N, LOW);
-                    vTaskDelay(pdMS_TO_TICKS(50)); 
-                    digitalWrite(PIN_RELAY_SOLAR_L, HIGH); digitalWrite(PIN_RELAY_SOLAR_N, HIGH);
+                    // --- DISCONNECT GRID (Sequence: Triac ON -> Disconnect Phase -> Disconnect Neutral -> Triac OFF) ---
+                    digitalWrite(PIN_TRIAC_GRID, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_GRID_L, LOW); // Phase disconnects first
+                    vTaskDelay(pdMS_TO_TICKS(15)); 
+                    digitalWrite(PIN_RELAY_GRID_N, LOW); // Neutral follows
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_TRIAC_GRID, LOW); 
+                    
+                    vTaskDelay(pdMS_TO_TICKS(50)); // Safe delay / Deadband
+                    
+                    // --- CONNECT SOLAR (Sequence: Triac ON -> Connect Neutral -> Connect Phase -> Triac OFF) ---
+                    digitalWrite(PIN_TRIAC_SOLAR, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_SOLAR_N, HIGH); // Neutral connects first
+                    vTaskDelay(pdMS_TO_TICKS(15)); 
+                    digitalWrite(PIN_RELAY_SOLAR_L, HIGH); // Phase follows
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_TRIAC_SOLAR, LOW); 
                     
                     currentState = STATE_SOLAR_ACTIVE;
                     manualForceGrid = false; 
                 } else {
-                    digitalWrite(PIN_RELAY_SOLAR_L, LOW); digitalWrite(PIN_RELAY_SOLAR_N, LOW);
+                    // --- DISCONNECT SOLAR ---
+                    digitalWrite(PIN_TRIAC_SOLAR, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_SOLAR_L, LOW); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_SOLAR_N, LOW); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_TRIAC_SOLAR, LOW); 
+                    
                     vTaskDelay(pdMS_TO_TICKS(50)); 
-                    digitalWrite(PIN_RELAY_GRID_L, HIGH); digitalWrite(PIN_RELAY_GRID_N, HIGH);
+                    
+                    // --- CONNECT GRID ---
+                    digitalWrite(PIN_TRIAC_GRID, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_GRID_N, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_RELAY_GRID_L, HIGH); 
+                    vTaskDelay(pdMS_TO_TICKS(15));
+                    digitalWrite(PIN_TRIAC_GRID, LOW); 
                     
                     currentState = STATE_GRID_ACTIVE;
                     manualForceGrid = true; 
@@ -170,17 +203,54 @@ void taskSwitchingControl(void *pvParameters) {
             else if (isManualMode) targetIsGrid = manualForceGrid; 
             else targetIsGrid = (g_fisOutput[0] >= 0.5); 
 
+            // --- NORMAL SWITCHING EXECUTION ---
             if (!targetIsGrid && currentState != STATE_SOLAR_ACTIVE) {
                 currentState = STATE_TRANSITIONING;
-                digitalWrite(PIN_RELAY_GRID_L, LOW); digitalWrite(PIN_RELAY_GRID_N, LOW);
+                
+                // Disconnect Grid
+                digitalWrite(PIN_TRIAC_GRID, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_GRID_L, LOW); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_GRID_N, LOW); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_TRIAC_GRID, LOW); 
+                
                 vTaskDelay(pdMS_TO_TICKS(50)); 
-                digitalWrite(PIN_RELAY_SOLAR_L, HIGH); digitalWrite(PIN_RELAY_SOLAR_N, HIGH);
+                
+                // Connect Solar
+                digitalWrite(PIN_TRIAC_SOLAR, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_SOLAR_N, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_SOLAR_L, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_TRIAC_SOLAR, LOW); 
+                
                 currentState = STATE_SOLAR_ACTIVE;
             } else if (targetIsGrid && currentState != STATE_GRID_ACTIVE) {
                 currentState = STATE_TRANSITIONING;
-                digitalWrite(PIN_RELAY_SOLAR_L, LOW); digitalWrite(PIN_RELAY_SOLAR_N, LOW);
+                
+                // Disconnect Solar
+                digitalWrite(PIN_TRIAC_SOLAR, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_SOLAR_L, LOW); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_SOLAR_N, LOW); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_TRIAC_SOLAR, LOW); 
+                
                 vTaskDelay(pdMS_TO_TICKS(50)); 
-                digitalWrite(PIN_RELAY_GRID_L, HIGH); digitalWrite(PIN_RELAY_GRID_N, HIGH);
+                
+                // Connect Grid
+                digitalWrite(PIN_TRIAC_GRID, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_GRID_N, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_RELAY_GRID_L, HIGH); 
+                vTaskDelay(pdMS_TO_TICKS(15));
+                digitalWrite(PIN_TRIAC_GRID, LOW); 
+                
                 currentState = STATE_GRID_ACTIVE;
             }
         }
