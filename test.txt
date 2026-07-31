@@ -1,0 +1,18 @@
+#define PIN_RELAY_GRID_L  14 
+#define PIN_RELAY_GRID_N  32 
+
+// Relay Solar (PV)
+#define PIN_RELAY_SOLAR_L 19 
+#define PIN_RELAY_SOLAR_N 33
+
+// Triac Solid State
+#define PIN_TRIAC_GRID    12
+#define PIN_TRIAC_SOLAR   18
+
+#define PZEM_RX_PIN     17 
+#define PZEM_TX_PIN     16
+// Button Pin
+#define PIN_BTN_MODE    25  // Auto/manual Mode
+#define PIN_BTN_PAGE    26  // Change screen pages
+#define PIN_BTN_TOGGLE  27  // Execution button (Enter)
+// ==========================================
