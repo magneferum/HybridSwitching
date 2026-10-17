@@ -141,7 +141,7 @@ void taskSwitchingControl(void *pvParameters) {
                     vTaskDelay(pdMS_TO_TICKS(15));
                     digitalWrite(PIN_TRIAC_GRID, LOW); 
                     
-                    vTaskDelay(pdMS_TO_TICKS(50)); // Safe delay / Deadband
+                    vTaskDelay(pdMS_TO_TICKS(100)); // Safe delay / Deadband
                     
                     // --- CONNECT SOLAR (Sequence: Triac ON -> Connect Neutral -> Connect Phase -> Triac OFF) ---
                     digitalWrite(PIN_TRIAC_SOLAR, HIGH); 
@@ -164,7 +164,7 @@ void taskSwitchingControl(void *pvParameters) {
                     vTaskDelay(pdMS_TO_TICKS(15));
                     digitalWrite(PIN_TRIAC_SOLAR, LOW); 
                     
-                    vTaskDelay(pdMS_TO_TICKS(50)); 
+                    vTaskDelay(pdMS_TO_TICKS(100)); 
                     
                     // --- CONNECT GRID ---
                     digitalWrite(PIN_TRIAC_GRID, HIGH); 
@@ -280,14 +280,14 @@ void taskReadTelemetry(void *pvParameters) {
         float t_dur = 0.0;
 
         // --- PZEM debugging ---
-        /*
+        
         Serial.print("[PZEM TRACKER] ");
         if (isnan(t_vol)) {
             Serial.println("STATUS: GAGAL (NaN) -> Data terputus di jalan / AC 220V Mati!");
         } else {
             Serial.printf("SUKSES! V: %.1f | Hz: %.2f | A: %.2f | W: %.0f\n", t_vol, t_fre, t_cur, t_pow);
         }
-        */
+        
         // -------------------------------------------------------------------------
 
         // Change NaN to 0
